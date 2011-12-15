@@ -1,0 +1,53 @@
+<html>
+
+  <head>
+  <title>Conway's Game Of Life - User Manual</title>
+  </head>
+
+  <body>
+  <h1>Conway's Game Of Life - User Manual</h1>
+  </body>
+<p>
+<br>
+
+<img src="game_of_life.jpg"  />
+<br><br><br>
+<table border="1">
+	<tr><td><em><b>Button / Menu</b></em></td>  <td><em><b>Operation</b></em></td></tr>
+  	<tr><td>Start/stop</td> <td>Start or stop the running.</td></tr>
+	<tr><td>Speed</td> <td>Slider to determine the frame rate.</td></tr>
+	<tr><td>Grid size</td> <td>Determines the grid size. One can use the slider, or type manually.</td></tr>
+	<tr><td>Number of iterations</td> <td>Determine the number of iteration. One can use the buttons, or type manually.
+			<br>While "infinite loop" were choosen, the other buttons are disabeled.</td></tr>
+	<tr><td>Style</td> <td>Determine the initial state of the grid.
+			<br>For random, the user should determine the density.
+			<br>For the circle or square, the user should input the size.
+			<br>For the oscillators/gliders/spaceships, the user should choose if the grid will be single or multy samples.
+			<br>Most of the gliders were taken from <a href="http://fano.ics.uci.edu/ca/rules/b3s23/">http://fano.ics.uci.edu/ca/rules/b3s23/</a>.</td></tr>
+  	<tr><td>Clear</td> <td>Clear the grid.</td></tr>
+	<tr><td>Inverse</td> <td>Turn the white cells into black, and vice versa.</td></tr>
+	<tr><td>Draw</td> <td>Let the user draw on the grid.</td></tr>
+	<tr><td>Reset</td> <td>Turn the grid to the state it was before running/drawing/clearing.</td></tr>		
+  	<tr><td>Move grid</td> <td>Let the user move the grid up/down/right/left, flip vertical or horizontal, ot transpose the grid.</td></tr>
+  	<tr><td>Grid lines</td> <td>Show/hide the grid lines.</td></tr>
+  	<tr><td>Load</td> <td>Loading MATLAB mat-file to the grid.</td></tr>	
+	<tr><td>Save matrix</td> <td>Save the grid as MATLAB mat-file.</td></tr>	
+	<tr><td>Save as image</td> <td>Save the grid as BMP, JPEG, PNG or TIFF image.</td></tr>	
+	<tr><td>Save as video</td> <td>While start the running, the animation will be saved as an AVI video file.
+			<br>The frame rate is determine by the initial speed.</td></tr>	
+	<tr><td>Close</td> <td>Exit program.</td></tr>	
+</table>
+<br>
+<p>
+The running stops in one of three cases:
+<ol>
+    <li>The user press the stop button.</li>
+	<li>The program complete the number of iterations.</li>
+	<li>The grid is in "steady-state".</li>
+</ol>	
+</p>
+<br><br>
+Enjoy the Game!
+<br><br>
+Moshe Lindner, February 2010 (c).
+</html>
