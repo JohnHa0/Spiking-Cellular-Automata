@@ -6,11 +6,14 @@
  tau=10;       % time constant [ms]
  E_L=-65;      % resting potential [mV]
  theta=-55;    % firing threshold [mV]
- RI_ext=12;     % constant external input [mA/Ohm]
+ RI_ext = input('input current');     % constant external input [mA/Ohm]
  
 %% Integration with Euler method
  t_step=0; v=E_L;
- for t=0:dt:100;
+ for t=0:dt:1;
+     
+     RI_ext = input('current ');
+     
      t_step=t_step+1;
      s=v>theta;
      v=s*E_L+(1-s)*(v-dt/tau*((v-E_L)-RI_ext));
