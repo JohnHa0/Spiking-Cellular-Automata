@@ -3,39 +3,38 @@
 
 %% parameters of the model
  m = 101;
- dt=0.1;       % integration time step [ms]
- tau=10;       % time constant [ms]
- E_L=-65*ones(m, m);      % resting potential [mV]
- theta=-55;    % firing threshold [mV]
+ dt = 0.1;       % integration time step [ms]
+ tau = 10;       % time constant [ms]
+ E_L = -65*ones(m, m);      % resting potential [mV]
+ theta = -55;    % firing threshold [mV]
  %RI_ext = input('input current');     % constant external input [mA/Ohm]
-
-
+ 
 %%
-
    
-   X = sparse(m,m);
+   X = zeros(m,m);
    
    p = -1:1;
-   for count=1:5000,
+   for count=1:50,
       kx=floor(rand*(m-4))+2; 
       ky=floor(rand*(m-4))+2; 
       X(kx+p,ky+p)=(rand(3)>0.1);
    end;
    
-   X = X.*rand(m, m).*(-55);
-   spike = X;
-   
+   X = (X ~= 0).* (-55);
+   spike = X ~= 0;
    
    % The "find" function returns the indices of the nonzero elements.
    [i,j] = find(spike);
    
    z = i.*0;
    
-   figure(gcf);
-     plothandle = plot3(i,j,z,'.', ...
+  % figure(gcf);
+   plot3(i,j,z,'.', ...
       'Color','blue', ...
       'MarkerSize',12);
    axis([0 m+1 0 m+1]);
+   
+   hold on
  %%  
    % Whether cells stay alive, die, or generate new cells depends
    % upon how many of their eight possible neighbors are alive.
@@ -46,33 +45,38 @@
    e = [2:m 1];
    s = [2:m 1];
    w = [m 1:m-1];
-   a = 0;
-   for t = 0:dt:1000;
-       a = a + 1;
+ 
+   for t = 1:1:50;
       % How many of eight neighbors are alive.
-      spike = X(n,:) + X(s,:) + X(:,e) + X(:,w) + ...
-         X(n,e) + X(n,w) + X(s,e) + X(s,w);
+      spike = spike(n,:) + spike(s,:) + spike(:,e) + spike(:,w) + ...
+         spike(n,e) + spike(n,w) + spike(s,e) + spike(s,w);
       
-      spike = spike > -55;
-     
       % A live cell with two live neighbors, or any cell with three
       % neigbhors, is alive at the next time step.
       
-      RI_ext = spike .* 15;
+      RI_ext = spike .* 10;
       
-      X=spike.*E_L+(ones(m, m)-spike)*(X-dt/tau.*((X-E_L)-RI_ext));
+      X = (X-dt/tau.*((X-E_L)-RI_ext));
+      
+      temp1 = X > -55;
+      
+      X = ~temp1 .* X + temp1 .* -65;
+      
+      temp2 = X ~= 0;
+      
+      spike = temp1 .* temp2;
       
       % Update plot.
       [i,j] = find(spike);
       z = i.*0 + 1;
-      z = z.*a;
+      z = z.*t;
       
-      set(plothandle,'xdata',i,'ydata',j, 'zdata',z)
-      
+      plot3(i,j,z,'.', ...
+      'Color','blue', ...
+      'MarkerSize',12);
+    
       
       drawnow
      
 
    end
-   
-   % ====== End of Demo
