@@ -18,7 +18,7 @@
    X = zeros(m,m);
    % set the initial value using rand()
    p = -1:1;
-   for count=1:280,
+   for count=1:300,
       kx=floor(rand*(m-4))+2; 
       ky=floor(rand*(m-4))+2; 
       X(kx+p,ky+p)=(rand(3)>0.1);
@@ -35,7 +35,7 @@
    % plot the fire neuron  
 
    figure(gcf);
-   plothandle = plot(i,j,'.', ...
+   plothandle = plot3(i,j,z,'.', ...
       'Color','red', ...
       'MarkerSize',12);
    axis([0 m+1 0 m+1]);
@@ -94,11 +94,11 @@ end
       z = z.*t;
     
       plot3(i,j,z,'.', ...
-      'Color','red', ...
+      'Color','blue', ...
       'MarkerSize',12);
  end
     
-      set(plothandle,'xdata',i,'ydata',j)
+      set(plothandle,'xdata',i,'ydata',j,'zdata',z)
       drawnow
      
 
