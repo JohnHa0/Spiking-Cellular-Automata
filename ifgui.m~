@@ -135,6 +135,7 @@ while get(hObject, 'Value')
   
   if (get(hObject, 'Value') == 0) | (handles.vis_grid == 0)
       set(hObject, 'String', 'START');
+      set(hObject, 'Value', 1);
       break;
   end
 end
