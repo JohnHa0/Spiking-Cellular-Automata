@@ -1,35 +1,35 @@
-function varargout = ifgui(varargin)
-% IFGUI MATLAB code for ifgui.fig
-%      IFGUI, by itself, creates a new IFGUI or raises the existing
+function varargout = ifguicolor(varargin)
+% IFGUICOLOR MATLAB code for ifguicolor.fig
+%      IFGUICOLOR, by itself, creates a new IFGUICOLOR or raises the existing
 %      singleton*.
 %
-%      H = IFGUI returns the handle to a new IFGUI or the handle to
+%      H = IFGUICOLOR returns the handle to a new IFGUICOLOR or the handle to
 %      the existing singleton*.
 %
-%      IFGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in IFGUI.M with the given input arguments.
+%      IFGUICOLOR('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in IFGUICOLOR.M with the given input arguments.
 %
-%      IFGUI('Property','Value',...) creates a new IFGUI or raises the
+%      IFGUICOLOR('Property','Value',...) creates a new IFGUICOLOR or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before ifgui_OpeningFcn gets called.  An
+%      applied to the GUI before ifguicolor_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to ifgui_OpeningFcn via varargin.
+%      stop.  All inputs are passed to ifguicolor_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help ifgui
+% Edit the above text to modify the response to help ifguicolor
 
-% Last Modified by GUIDE v2.5 05-Feb-2012 11:55:31
+% Last Modified by GUIDE v2.5 05-Feb-2012 18:20:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @ifgui_OpeningFcn, ...
-                   'gui_OutputFcn',  @ifgui_OutputFcn, ...
+                   'gui_OpeningFcn', @ifguicolor_OpeningFcn, ...
+                   'gui_OutputFcn',  @ifguicolor_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,14 +44,14 @@ end
 % End initialization code - DO NOT EDIT
 
 
-function ifgui_OpeningFcn(hObject, eventdata, handles, varargin)
+function ifguicolor_OpeningFcn(hObject, eventdata, handles, varargin)
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to ifgui (see VARARGIN)
+% varargin   command line arguments to ifguicolor (see VARARGIN)
 
-% Choose default command line output for ifgui
+% Choose default command line output for ifguicolor
 handles.output = hObject;
 
 %% initialization
@@ -60,21 +60,21 @@ handles.vis_grid = zeros(100);
 handles.Weight = 14;                        %weight. The rate is 0.02388
 handles.Range = 1;
 handles.Tau = 10;
-
+handles.X = handles.vis_grid;
 handles.theta = -55;                        %firing threshold
 handles.dt = 0.1;                           %integration time step
 
 
 % Update handles structure
 guidata(hObject, handles);
-plot_grid(handles);
+plot_draw(handles);
 
-% UIWAIT makes ifgui wait for user response (see UIRESUME)
+% UIWAIT makes ifguicolor wait for user response (see UIRESUME)
 % uiwait(handles.figure);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = ifgui_OutputFcn(hObject, eventdata, handles) 
+function varargout = ifguicolor_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -130,7 +130,7 @@ while get(hObject, 'Value')
       spike = temp1;    % reset the spike NO. so that spike can indicate which neuron is fired
       
       handles.vis_grid = spike;
-      
+      handles.X = X;
       plot_grid(handles);
       guidata(hObject, handles);
   
@@ -154,7 +154,7 @@ function clearutton_Callback(hObject, eventdata, handles)
 
 handles.vis_grid = zeros(handles.M, handles.M);
 guidata(hObject, handles);
-plot_grid(handles);
+plot_draw(handles);
 
 % --- Executes on button press in drawbutton.
 function drawbutton_Callback(hObject, eventdata, handles)
@@ -174,7 +174,7 @@ while 1
         if (x>0)&&(x<handles.M+1)&&(y>0)&&(y<handles.M+1)
             handles.vis_grid(x,y) = ~(handles.vis_grid(x,y));
             guidata(hObject, handles);
-            plot_grid(handles);
+            plot_draw(handles);
         end
     else
         set(handles.drawtext, 'Visible', 'off');
@@ -335,7 +335,7 @@ end
 handles.M = m;
 set(handles.sizeedit, 'String', num2str(handles.M));
 guidata(hObject, handles);
-plot_grid(handles);
+plot_draw(handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -422,8 +422,23 @@ end
 guidata(hObject, handles);
 
 
-%%plot grid ////////////////////need to be fixed
+%%plot grid 
 function []=plot_grid(handles)
+M = handles.M;
+axes(handles.axes1);
+%imagesc(-handles.X);
+contour(handles.X);
+colormap ('Hot');
+
+set(gca,'xtick',[1:M] -.5 ,'ytick',[1:M]-.5,'yticklabel',[],'xticklabel',[],'xcolor',[.7 .7 .7],'ycolor',[.7 .7 .7],'GridLineStyle','-');
+grid on;
+if get(handles.linebutton,'Value') == 1
+    axis on;
+else
+    axis off;
+end
+
+function []=plot_draw(handles)
 M = handles.M;
 axes(handles.axes1);
 imagesc(-handles.vis_grid);
