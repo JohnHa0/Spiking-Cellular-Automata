@@ -12,12 +12,13 @@
  tau = 10;                   % time constant [ms]
  E_L = -65*ones(m, m);       % resting potential [mV]
  theta = -55;                % firing threshold [mV]
+ weight = 13;                % rate is 0.02388
 %% make neural network with initial value
    
    X = zeros(m,m);
    % set the initial value using rand()
    p = -1:1;
-   for count=1:300,
+   for count=1:200,
       kx=floor(rand*(m-4))+2; 
       ky=floor(rand*(m-4))+2; 
       X(kx+p,ky+p)=(rand(3)>0.1);
@@ -36,8 +37,8 @@
       'Color','blue', ...
       'MarkerSize',12);
    
-   axis([0 m 0 m -66 -54]); 
-   set(gca,'ztick',[-66:0.5:-54]);
+   axis([0 m 0 m -66 -53]); 
+   set(gca,'ztick',[-66:0.5:-53]);
    hold off;
    
    % plot the fire neuron  
@@ -71,7 +72,7 @@ end
  
    X = (X ~= 0) .* (-55) + (X == 0) .* (-65); % set the unfired neuron to -65
    
-   for t = 1:1:100;
+   for t = 1:1:500;
        
       % how many of eight neighbors are fired.
       spike = spike(n,:) + spike(s,:) + spike(:,e) + spike(:,w) + ...
@@ -81,7 +82,7 @@ end
       % the NO. of neurons can be stable when the current value is around 150
       
       
-      RI_ext = spike .* 150;
+      RI_ext = spike .* (12 * weight);
    
       X = X - ((dt/tau) .* ones(m, m)) .* ((X - E_L) - RI_ext);   % if equation
       
@@ -109,8 +110,8 @@ end
       'Color','red', ...
       'MarkerSize',12);
  end
-      axis([0 m 0 m -66 -54]); 
-      set(gca,'ztick',[-66:0.5:-54]);
+      axis([0 m 0 m -66 -53]); 
+      set(gca,'ztick',[-66:0.5:-53]);
       hold off;
      % set(plothandle,'xdata',i,'ydata',j)
       drawnow
