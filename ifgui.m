@@ -22,7 +22,7 @@ function varargout = ifgui(varargin)
 
 % Edit the above text to modify the response to help ifgui
 
-% Last Modified by GUIDE v2.5 05-Feb-2012 21:33:02
+% Last Modified by GUIDE v2.5 12-Feb-2012 16:13:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,14 +57,16 @@ handles.output = hObject;
 %% initialization
 handles.M = 100;                            %size of grid
 handles.vis_grid = zeros(100);
+handles.Speed = 10;
 handles.Weight = 14;                        %weight. The rate is 0.02388
 handles.Range = 1;
 handles.Tau = 10;
 
 handles.theta = -55;                        %firing threshold
 handles.dt = 0.1;                           %integration time step
-
-
+handles.step = 0;
+handles.El = -65 .* ones(handles.M, handles.M);
+handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
 % Update handles structure
 guidata(hObject, handles);
 plot_grid(handles);
@@ -99,43 +101,46 @@ function startbutton_Callback(hObject, eventdata, handles)
    s = [2: handles.M 1];
    w = [handles.M 1: handles.M - 1];
    
-   %here has a bug when stop and then start again
-   X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65);
-   % set the unfired neuron to -65
-   
-   spike = handles.vis_grid;
-   El = -65 .* ones(handles.M, handles.M);
    guidata(hObject, handles);
+   
 
 while get(hObject, 'Value')
     
       set(hObject, 'String', 'STOP');
+      
+      handles.step = handles.step + 1;
+      set(handles.stepedit, 'String', num2str(handles.step));
        
       % how many of eight neighbors are fired.
-      spike = spike(n,:) + spike(s,:) + spike(:,e) + spike(:,w) + ...
-         spike(n,e) + spike(n,w) + spike(s,e) + spike(s,w);
+      handles.vis_grid = handles.vis_grid(n,:) + handles.vis_grid(s,:) + handles.vis_grid(:,e) + handles.vis_grid(:,w) + ...
+         handles.vis_grid(n,e) + handles.vis_grid(n,w) + handles.vis_grid(s,e) + handles.vis_grid(s,w);
       
       % the fire neuron will generat 80mV current.
       % the NO. of neurons can be stable when the current value is around 150
       
       
-      RI_ext = spike .* (12 * handles.Weight);
+      RI_ext = handles.vis_grid .* (12 * handles.Weight);
    
-      X = X - ((handles.dt/handles.Tau) .* ones(handles.M, handles.M)) .* ((X - El) - RI_ext);   % if equation
+      handles.X = handles.X - ((handles.dt/handles.Tau) .* ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
       
-      temp1 = X > -55;
+      temp1 = handles.X > -55;
       
-      X = ~temp1 .* X + temp1 .* -65; % reset 
+      handles.X = ~temp1 .* handles.X + temp1 .* -65; % reset 
       
-      spike = temp1;    % reset the spike NO. so that spike can indicate which neuron is fired
+      handles.vis_grid = temp1;    % reset the handles.vis_grid NO. so that handles.vis_grid can indicate which neuron is fired
       
-      handles.vis_grid = spike;
       
       plot_grid(handles);
+      
+      if handles.Speed ~= 10            %set the speed.
+          pause((1/handles.Speed) * 2);
+      end
+      
       guidata(hObject, handles);
   
-  if (get(hObject, 'Value') == 0) | (handles.vis_grid == 0)
+  if (get(hObject, 'Value') == 0) | (handles.X == -65)
       set(hObject, 'String', 'START');
+      guidata(hObject, handles);
       break;
   end
 end
@@ -153,6 +158,10 @@ function clearutton_Callback(hObject, eventdata, handles)
 %%
 
 handles.vis_grid = zeros(handles.M, handles.M);
+handles.El = -65 .* ones(handles.M, handles.M);
+handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
+handles.step = 0;
+set(handles.stepedit, 'String', num2str(handles.step));
 guidata(hObject, handles);
 plot_grid(handles);
 
@@ -173,6 +182,8 @@ while 1
         y = round(y);
         if (x>0)&&(x<handles.M+1)&&(y>0)&&(y<handles.M+1)
             handles.vis_grid(x,y) = ~(handles.vis_grid(x,y));
+            handles.El = -65 .* ones(handles.M, handles.M);
+            handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
             guidata(hObject, handles);
             plot_grid(handles);
         end
@@ -293,7 +304,7 @@ function weightslider_Callback(hObject, eventdata, handles)
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
 %%
-handles.Weight = round(get(hObject, 'Value'));
+handles.Weight = get(hObject, 'Value');
 
 set(handles.weightedit, 'String', num2str(handles.Weight));
 
@@ -327,9 +338,13 @@ m = round(get(hObject,'Value'));
 
 if m > handles.M
     handles.vis_grid(m, m) = 0;
+    handles.El = -65 .* ones(m, m);
+    handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
 elseif m < handles.M
     handles.vis_grid(m + 1: end,:) = [];
     handles.vis_grid(: , m + 1: end) = [];
+    handles.El = -65 .* (0 .* handles.vis_grid + 1);
+    handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
 end
 
 handles.M = m;
@@ -388,7 +403,7 @@ function tauslider_Callback(hObject, eventdata, handles)
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
 %%
-handles.Tau = round(get(hObject, 'Value'));
+handles.Tau = get(hObject, 'Value');
 
 set(handles.tauedit, 'String', num2str(handles.Tau));
 
@@ -435,6 +450,7 @@ else
 end
 set(gca,'xtick',[1:M] -.5 ,'ytick',[1:M]-.5,'yticklabel',[],'xticklabel',[],'xcolor',[.7 .7 .7],'ycolor',[.7 .7 .7],'GridLineStyle','-');
 grid on;
+
 if get(handles.linebutton,'Value') == 1
     axis on;
 else
@@ -879,3 +895,80 @@ else
             end %k
     end %switch
 end %if
+
+% --- Executes on slider movement.
+function speedslider_Callback(hObject, eventdata, handles)
+% hObject    handle to speedslider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+%%
+handles.Speed = round(get(hObject, 'Value'));
+
+set(handles.speededit, 'String', num2str(handles.Speed));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function speedslider_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to speedslider (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+
+function speededit_Callback(hObject, eventdata, handles)
+% hObject    handle to speededit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of speededit as text
+%        str2double(get(hObject,'String')) returns contents of speededit as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function speededit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to speededit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function stepedit_Callback(hObject, eventdata, handles)
+% hObject    handle to stepedit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of stepedit as text
+%        str2double(get(hObject,'String')) returns contents of stepedit as a double
+
+%%
+set(handles.stepedit, 'String', num2str(handles.step));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function stepedit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to stepedit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
