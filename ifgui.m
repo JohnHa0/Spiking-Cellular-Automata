@@ -22,7 +22,7 @@ function varargout = ifgui(varargin)
 
 % Edit the above text to modify the response to help ifgui
 
-% Last Modified by GUIDE v2.5 12-Feb-2012 16:13:12
+% Last Modified by GUIDE v2.5 12-Feb-2012 23:25:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,7 +66,10 @@ handles.theta = -55;                        %firing threshold
 handles.dt = 0.1;                           %integration time step
 handles.step = 0;
 handles.El = -65 .* ones(handles.M, handles.M);
-handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
+handles.X = ones(handles.M) .* (-65); 
+
+handles.se = 0;
+
 % Update handles structure
 guidata(hObject, handles);
 plot_grid(handles);
@@ -100,7 +103,7 @@ function startbutton_Callback(hObject, eventdata, handles)
    e = [2: handles.M 1];
    s = [2: handles.M 1];
    w = [handles.M 1: handles.M - 1];
-   
+   t_step = 0;
    guidata(hObject, handles);
    
 
@@ -109,6 +112,7 @@ while get(hObject, 'Value')
       set(hObject, 'String', 'STOP');
       
       handles.step = handles.step + 1;
+
       set(handles.stepedit, 'String', num2str(handles.step));
        
       % how many of eight neighbors are fired.
@@ -123,14 +127,49 @@ while get(hObject, 'Value')
    
       handles.X = handles.X - ((handles.dt/handles.Tau) .* ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
       
+      plot_grid(handles);
+      
       temp1 = handles.X > -55;
       
       handles.X = ~temp1 .* handles.X + temp1 .* -65; % reset 
       
       handles.vis_grid = temp1;    % reset the handles.vis_grid NO. so that handles.vis_grid can indicate which neuron is fired
       
+      %%plot the state of selected neurons
       
-      plot_grid(handles);
+            
+      if handles.se == 1;
+          
+         t_step = t_step + 1;
+      
+       v_rec1(t_step) = handles.vis_grid(handles.x1, handles.y1);
+       t_rec1(t_step) = t_step;
+       v_rec2(t_step) = handles.vis_grid(handles.x2, handles.y2);
+       t_rec2(t_step) = t_step;
+       
+             if handles.se == 1;
+        axes(handles.axes2);
+      
+        %subplot('position',[0.13 0.13 1-0.26 0.6])
+        plot(t_rec1,v_rec1,'.','markersize',20);
+        hold on; 
+        %plot([0 100],[-55 -55]);
+
+        %xlabel('Time [ms]'); ylabel('v [mV]')
+       
+        
+        axes(handles.axes3);
+      
+        %subplot('position',[0.13 0.13 1-0.26 0.6])
+        plot(t_rec2,v_rec2,'.','markersize',20);
+        hold on; 
+        %plot([0 100],[-55 -55]);
+ 
+        %xlabel('Time [ms]'); ylabel('v [mV]')
+      
+      end
+       
+      end
       
       if handles.Speed ~= 10            %set the speed.
           pause((1/handles.Speed) * 2);
@@ -140,12 +179,21 @@ while get(hObject, 'Value')
   
   if (get(hObject, 'Value') == 0) | (handles.X == -65)
       set(hObject, 'String', 'START');
+      set(hObject, 'Value', 0);
+      axes(handles.axes2);
+      hold off;
+      axes(handles.axes3);
+      hold off;
+      
+        % Plotting results
+
+      
       guidata(hObject, handles);
       break;
   end
 end
 
-plot_grid(handles);
+%plot_grid(handles);
 guidata(hObject, handles);
 
 
@@ -159,9 +207,11 @@ function clearutton_Callback(hObject, eventdata, handles)
 
 handles.vis_grid = zeros(handles.M, handles.M);
 handles.El = -65 .* ones(handles.M, handles.M);
-handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
+handles.X = ones(handles.M) .* -65; 
 handles.step = 0;
+handles.se = 0;
 set(handles.stepedit, 'String', num2str(handles.step));
+
 guidata(hObject, handles);
 plot_grid(handles);
 
@@ -428,17 +478,37 @@ function linebutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of linebutton
+plot_grid(handles);
 
-if get(hObject,'Value') == 1
-    axis on;
-else
-    axis off;
-end
 guidata(hObject, handles);
 
 
 %%plot grid ////////////////////need to be fixed
 function []=plot_grid(handles)
+
+if get(handles.firedbutton, 'Value') == 0
+ 
+handles.X(1, 1) = -55;
+handles.X(handles.M,handles.M) = -65;
+
+M = handles.M;
+axes(handles.axes1);
+imagesc(handles.X);
+
+
+colormap hot;
+
+
+set(gca,'xtick',[1:M] -.5 ,'ytick',[1:M]-.5,'yticklabel',[],'xticklabel',[],'xcolor',[.7 .7 .7],'ycolor',[.7 .7 .7],'GridLineStyle','-');
+grid on;
+
+if get(handles.linebutton,'Value') == 1
+    axis on;
+else
+    axis off;
+end
+
+else
 M = handles.M;
 axes(handles.axes1);
 imagesc(-handles.vis_grid);
@@ -455,6 +525,8 @@ if get(handles.linebutton,'Value') == 1
     axis on;
 else
     axis off;
+end
+
 end
 
 
@@ -620,7 +692,9 @@ end
 if pattrn
     handles=creat_pattern(handles);
 end
+handles.X = (handles.vis_grid ~= 0) .* (-55) + (handles.vis_grid == 0) .* (-65); 
 guidata(hObject, handles);
+
 plot_grid(handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -947,7 +1021,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function stepedit_Callback(hObject, eventdata, handles)
 % hObject    handle to stepedit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -972,3 +1045,65 @@ function stepedit_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in firedbutton.
+function firedbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to firedbutton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of firedbutton
+
+
+%%plot grid ////////////////////need to be fixed
+function []=plot_fired(handles)
+
+M = handles.M;
+axes(handles.axes1);
+imagesc(-handles.vis_grid);
+
+if all(handles.vis_grid)
+    colormap ([0 0 0]);
+else
+    colormap gray(2);
+end
+set(gca,'xtick',[1:M] -.5 ,'ytick',[1:M]-.5,'yticklabel',[],'xticklabel',[],'xcolor',[.7 .7 .7],'ycolor',[.7 .7 .7],'GridLineStyle','-');
+grid on;
+
+
+% --- Executes on button press in selectbutton.
+function selectbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to selectbutton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%%
+i = 0;
+while i < 2
+    set(handles.text8, 'Visible', 'on');
+    handles.se = 1;         %select enable
+    i = i+1;
+    x = 1;
+    [y,x] = ginput(1);
+    if ~isempty(x)
+        x = round(x);
+        y = round(y);
+        if (x>0)&&(x<handles.M+1)&&(y>0)&&(y<handles.M+1)
+            if i == 1;
+                handles.x1 = x;
+                handles.y1 = y;
+            
+            else
+                handles.x2 = x;
+                handles.y2 = y;
+                set(handles.text8, 'Visible', 'off');
+            end
+            
+            guidata(hObject, handles);
+        end
+    else
+        set(handles.text8, 'Visible', 'off');
+        break
+    end
+end %while
