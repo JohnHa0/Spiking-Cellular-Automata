@@ -127,9 +127,12 @@ while get(hObject, 'Value')
    
       handles.X = handles.X - ((handles.dt/handles.Tau) .* ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
       
+      temp1 = handles.X > -55;
+      handles.X = ~temp1 .* handles.X + temp1 .* -55;
+      
       plot_grid(handles);
       
-      temp1 = handles.X > -55;
+      
       
       handles.X = ~temp1 .* handles.X + temp1 .* -65; % reset 
       
@@ -251,6 +254,7 @@ function exitbutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %%
+
 delete(handles.figure);
 
 function weightedit_Callback(hObject, eventdata, handles)
@@ -488,7 +492,7 @@ function []=plot_grid(handles)
 
 if get(handles.firedbutton, 'Value') == 0
  
-handles.X(1, 1) = -55;
+handles.X(1, 1) = -55.001;
 handles.X(handles.M,handles.M) = -65;
 
 M = handles.M;
