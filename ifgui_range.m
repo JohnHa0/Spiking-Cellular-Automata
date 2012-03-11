@@ -99,13 +99,13 @@ function startbutton_Callback(hObject, eventdata, handles)
 
 %%
 
-   n = [handles.M 1: handles.M - 1];
-   e = [2: handles.M 1];
-   s = [2: handles.M 1];
-   w = [handles.M 1: handles.M - 1];
-   t_step = 0;
-   guidata(hObject, handles);
-   
+t_step = 0 %used in the selest cells module
+
+inh = ones(handles.M)
+
+i = 1:5:handles.M
+j = 1:5:handles.M
+inh(i, j) = -inh(i, j)
 
 while get(hObject, 'Value')
     
@@ -114,17 +114,53 @@ while get(hObject, 'Value')
       handles.step = handles.step + 1;
 
       set(handles.stepedit, 'String', num2str(handles.step));
+      
+      
+      %% Range
+        spike = handles.vis_grid
+        sizen = handles.M
+        rangei = handles.Range
+        rangej = handles.Range
+
+        %%
+        while rangei > 0
+            n = 0.3
+            while rangej > 0
+                n = n + 0.1
+                Ri = rangei : -1 : 0
+                Rj = rangej : -1 : 0
+            %%   
+                Si = sizen * ones(size(Ri))
+                Sj = sizen * ones(size(Rj))
+            %%
+                up_size = (Si - Ri)
+                left_size = (Sj - Rj)
+            %%
+                matrix_up_left = handles.vis_grid .* inh
+            %%    
+                indexi = [up_size, 1 : sizen - (rangei + 1)]
+                indexj = [left_size, 1 : sizen - (rangej + 1)]
+            %%    
+                connect_range = matrix_up_left(indexi, indexj)
+                spike = spike + connect_range * n
+                
+                rangej = rangej - 1
+
+            end
+            
+            rangej = handles.Range
+            rangei = rangei - 1
+        end
+            
+    %% End range
+      
        
       % how many of eight neighbors are fired.
-      handles.vis_grid = handles.vis_grid(n,:) + handles.vis_grid(s,:) + handles.vis_grid(:,e) + handles.vis_grid(:,w);
-      
-      spike = handles.vis_grid(n,e) + handles.vis_grid(n,w) + handles.vis_grid(s,e) + handles.vis_grid(s,w);
-      
       % the fire neuron will generat 80mV current.
       % the NO. of neurons can be stable when the current value is around 150
       
       
-      RI_ext = handles.vis_grid .* (12 * handles.Weight) + spike .* (6 * handles.Weight / 16);
+      RI_ext = spike .* (12 * handles.Weight)
    
       handles.X = handles.X - ((handles.dt/handles.Tau) .* ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
       
@@ -146,32 +182,32 @@ while get(hObject, 'Value')
           
          t_step = t_step + 1;
       
-       v_rec1(t_step) = handles.vis_grid(handles.x1, handles.y1);
-       t_rec1(t_step) = t_step;
-       v_rec2(t_step) = handles.vis_grid(handles.x2, handles.y2);
-       t_rec2(t_step) = t_step;
+           v_rec1(t_step) = handles.X(handles.x1, handles.y1);
+           t_rec1(t_step) = t_step;
+           v_rec2(t_step) = handles.X(handles.x2, handles.y2);
+           t_rec2(t_step) = t_step;
        
-             if handles.se == 1;
-        axes(handles.axes2);
-      
-        %subplot('position',[0.13 0.13 1-0.26 0.6])
-        plot(t_rec1,v_rec1,'.','markersize',20);
-        hold on; 
-        %plot([0 100],[-55 -55]);
+            if handles.se == 1;
+            axes(handles.axes2);
 
-        %xlabel('Time [ms]'); ylabel('v [mV]')
-       
-        
-        axes(handles.axes3);
-      
-        %subplot('position',[0.13 0.13 1-0.26 0.6])
-        plot(t_rec2,v_rec2,'.','markersize',20);
-        hold on; 
-        %plot([0 100],[-55 -55]);
- 
-        %xlabel('Time [ms]'); ylabel('v [mV]')
-      
-      end
+            %subplot('position',[0.13 0.13 1-0.26 0.6])
+            plot(t_rec1,v_rec1,'.','markersize',12);
+            hold on; 
+            %plot([0 100],[-55 -55]);
+
+            %xlabel('Time [ms]'); ylabel('v [mV]')
+
+
+            axes(handles.axes3);
+
+            %subplot('position',[0.13 0.13 1-0.26 0.6])
+            plot(t_rec2,v_rec2,'.','markersize',12);
+            hold on; 
+            %plot([0 100],[-55 -55]);
+
+            %xlabel('Time [ms]'); ylabel('v [mV]')
+
+          end
        
       end
       
