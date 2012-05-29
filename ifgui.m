@@ -22,7 +22,7 @@ function varargout = ifgui(varargin)
 
 % Edit the above text to modify the response to help ifgui
 
-% Last Modified by GUIDE v2.5 12-Feb-2012 23:25:53
+% Last Modified by GUIDE v2.5 29-May-2012 21:18:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,17 +56,27 @@ handles.output = hObject;
 
 %% initialization
 handles.M = 100;                            %size of grid
-handles.vis_grid = zeros(100);
-handles.Speed = 10;
-handles.Weight = 14;  %weight. The rate is 0.02388
-handles.Range = 1;
-handles.Tau = 10;
+handles.vis_grid = zeros(100);              %
+handles.Speed = 10;                         %speed
+handles.Weight = 14;                        %weight. The rate is 0.02388
+%change weight to matrix
+handles.w_new = handles.Weight * (handles.vis_grid * 0 + 1);
+handles.range1 = 1;                         %connection range1
+handles.range2 = 1;
+handles.range3 = 1;
+handles.range4 = 1;
+handles.range5 = 1;
+handles.range6 = 1;
+handles.range7 = 1;
+handles.range8 = 1;
+
+handles.Tau = 10;                           %time constant
 
 handles.theta = -55;                        %firing threshold
 handles.dt = 0.1;                           %integration time step
-handles.step = 0;
+handles.step = 0;                           %step counter
 handles.El = -65 .* ones(handles.M, handles.M);
-handles.X = ones(handles.M) .* (-65); 
+handles.X = ones(handles.M) .* (-65);       %member protential
 
 handles.se = 0;
 
@@ -101,13 +111,26 @@ function startbutton_Callback(hObject, eventdata, handles)
 
 t_step = 0; %used in the selest cells module
 
-inh = ones(handles.M);
+%%Inhitory Synaptic inputs
+
+inh = ones(handles.M);                      
 
 i = 1:5:handles.M;
 j = 1:5:handles.M;
 inh(i, j) = -inh(i, j);
 
-while get(hObject, 'Value')
+%%Inhitory Synaptic end
+
+%% ansync enable
+if get(handles.ansync,'Value')
+    ansync = randn(handles.M, handles.M);
+else
+    ansync = zeros(handles.M, handles.M);
+end
+%% ansync end
+
+%%start when start button press. 'Value' is 1
+while get(hObject, 'Value')                 
     
       set(hObject, 'String', 'STOP');
       
@@ -115,76 +138,86 @@ while get(hObject, 'Value')
 
       set(handles.stepedit, 'String', num2str(handles.step));
       
-      
-      %% Range
-        spike = handles.vis_grid;
-        sizen = handles.M;
-        rangei = handles.Range;
-        rangej = handles.Range;
-
-        %%
-        while rangei > 0
-            n = 0.3;
-            while rangej > 0
-                n = n + 0.1;
-                Ri = rangei : -1 : 0;
-                Rj = rangej : -1 : 0;
-            %%   
-                Si = sizen * ones(size(Ri));
-                Sj = sizen * ones(size(Rj));
-            %%
-                up_size = (Si - Ri);
-                left_size = (Sj - Rj);
-            %%
-                matrix_up_left = handles.vis_grid .* inh;
-            %%    
-                indexi = [up_size, 1 : sizen - (rangei + 1)];
-                indexj = [left_size, 1 : sizen - (rangej + 1)];
-            %%    
-                connect_range = matrix_up_left(indexi, indexj);
-                spike = spike + connect_range * n;
-                
-                rangej = rangej - 1;
-
-            end
+    %% Range
             
-            rangej = handles.Range;
-            rangei = rangei - 1;
-        end
-            
+    handles.spike = range_connection1(handles.range1, handles.vis_grid, inh, handles.M) ...
+          + range_connection2(handles.range2, handles.vis_grid, inh, handles.M) ...
+          + range_connection3(handles.range3, handles.vis_grid, inh, handles.M) ...
+    	  + range_connection4(handles.range4, handles.vis_grid, inh, handles.M) ...
+          + range_connection5(handles.range5, handles.vis_grid, inh, handles.M) ...
+          + range_connection6(handles.range6, handles.vis_grid, inh, handles.M) ...
+          + range_connection7(handles.range7, handles.vis_grid, inh, handles.M) ...
+          + range_connection8(handles.range8, handles.vis_grid, inh, handles.M);
+    
     %% End range
-      
-       
+    %% Silent 
+    if get(handles.silentbutton,'Value')
+      if handles.step > 1
+          handles.spike = handles.spike .* handles.silent;
+      end
+    end
       % how many of eight neighbors are fired.
       % the fire neuron will generat 80mV current.
       % the NO. of neurons can be stable when the current value is around 150
       
       
-      %%learning 
-      handles.time_new = handles.vis_grid * handles.step;
-      if handles.step > 1
-          time = handles.time_new - handles.time_old;
-          spike = stdp(time, handles.Weight*spike);
+      %%learning
+      if get(handles.learn, 'Value') == 1
+        handles.time_new = handles.vis_grid * handles.step;
+        
+        %time different within moore neighbourhood
+        
+        n = [handles.M 1:handles.M-1];
+        e = [2:handles.M 1];
+        s = [2:handles.M 1];
+        w = [handles.M 1:handles.M-1];
+        
+        if handles.step > 1
+            time = handles.time_new - handles.time_old(n,:);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(s,:);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(:,e);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(:,w);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(n,e);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(n,w);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(s,e);
+            handles.w_new = stdp(time, handles.w_new);
+            
+            time = handles.time_new - handles.time_old(s,w);
+            handles.w_new = stdp(time, handles.w_new);
+            
+        end
+        handles.time_old = handles.time_new; 
       end
-      handles.time_old = handles.time_new 
+      %%learning end
       
-      
-      if handles.step > 1
-          RI_ext = spike .* 12; %old code
-      else RI_ext = spike .* (12 * handles.Weight);
-      end
+      RI_ext = handles.spike .* (12 * handles.w_new) + ansync;
    
-      handles.X = handles.X - ((handles.dt/handles.Tau) .* ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
+      handles.X = handles.X - ((handles.dt/handles.Tau) .* ...
+          ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
       
-      temp1 = handles.X > -55;
-      handles.X = ~temp1 .* handles.X + temp1 .* -55;
+      fired = handles.X > -55;
+      
+      handles.X = ~fired .* handles.X + fired .* -55;
       
       plot_grid(handles);
-            
       
-      handles.X = ~temp1 .* handles.X + temp1 .* -65; % reset 
+      handles.silent = ~fired;  %silent 
+        
+      handles.X = ~fired .* handles.X + fired .* -65; % reset 
       
-      handles.vis_grid = temp1;    % reset the handles.vis_grid NO. so that handles.vis_grid can indicate which neuron is fired
+      handles.vis_grid = fired;    % reset the handles.vis_grid NO. so that handles.vis_grid can indicate which neuron is fired
     
           
       %%plot the state of selected neurons
@@ -350,30 +383,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
-function rangeedit_Callback(hObject, eventdata, handles)
-% hObject    handle to rangeedit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of rangeedit as text
-%        str2double(get(hObject,'String')) returns contents of rangeedit as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function rangeedit_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to rangeedit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
 function tauedit_Callback(hObject, eventdata, handles)
 % hObject    handle to tauedit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -407,6 +416,9 @@ function weightslider_Callback(hObject, eventdata, handles)
 
 %%
 handles.Weight = get(hObject, 'Value');
+
+%change weight to matrix
+handles.w_new = handles.Weight * (handles.vis_grid * 0 + 1);
 
 set(handles.weightedit, 'String', num2str(handles.Weight));
 
@@ -468,34 +480,6 @@ end
 
 
 % --- Executes on slider movement.
-function rangeslider_Callback(hObject, eventdata, handles)
-% hObject    handle to rangeslider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-%%
-handles.Range = round(get(hObject, 'Value'));
-
-set(handles.rangeedit, 'String', num2str(handles.Range));
-
-guidata(hObject, handles);
-
-% --- Executes during object creation, after setting all properties.
-function rangeslider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to rangeslider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-% --- Executes on slider movement.
 function tauslider_Callback(hObject, eventdata, handles)
 % hObject    handle to tauslider (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -536,9 +520,7 @@ guidata(hObject, handles);
 
 
 %%plot grid ////////////////////need to be fixed
-function []=plot_grid(handles)
-
-if get(handles.firedbutton, 'Value') == 0
+function [] = plot_grid(handles)
  
 handles.X(1, 1) = -55.001;
 handles.X(handles.M,handles.M) = -65;
@@ -559,28 +541,6 @@ if get(handles.linebutton,'Value') == 1
 else
     axis off;
 end
-
-else
-M = handles.M;
-axes(handles.axes1);
-imagesc(-handles.vis_grid);
-
-if all(handles.vis_grid)
-    colormap ([0 0 0]);
-else
-    colormap gray(2);
-end
-set(gca,'xtick',[1:M] -.5 ,'ytick',[1:M]-.5,'yticklabel',[],'xticklabel',[],'xcolor',[.7 .7 .7],'ycolor',[.7 .7 .7],'GridLineStyle','-');
-grid on;
-
-if get(handles.linebutton,'Value') == 1
-    axis on;
-else
-    axis off;
-end
-
-end
-
 
 % --- Executes on selection change in popupmenu.
 function popupmenu_Callback(hObject, eventdata, handles)
@@ -1099,13 +1059,13 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in firedbutton.
-function firedbutton_Callback(hObject, eventdata, handles)
-% hObject    handle to firedbutton (see GCBO)
+% --- Executes on button press in learn.
+function learn_Callback(hObject, eventdata, handles)
+% hObject    handle to learn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of firedbutton
+% Hint: get(hObject,'Value') returns toggle state of learn
 
 
 %%plot grid ////////////////////need to be fixed
@@ -1159,3 +1119,247 @@ while i < 2
         break
     end
 end %while
+
+
+
+function rangeedit1_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit1 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit1 as a double
+
+
+handles.range1=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit1,'string',num2str(handles.range1));
+
+guidata(hObject, handles);
+
+
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function rangeedit4_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit4 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit4 as a double
+
+handles.range4=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit4,'string',num2str(handles.range4));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit4_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function rangeedit6_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit6 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit6 as a double
+
+handles.range6=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit6,'string',num2str(handles.range6));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit6_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function rangeedit3_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit3 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit3 as a double
+
+handles.range3=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit3,'string',num2str(handles.range3));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function rangeedit5_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit5 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit5 as a double
+
+handles.range5=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit5,'string',num2str(handles.range5));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit5_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function rangeedit8_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit8 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit8 as a double
+
+handles.range8=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit8,'string',num2str(handles.range8));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit8_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function rangeedit2_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit2 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit2 as a double
+
+handles.range2=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit2,'string',num2str(handles.range2));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function rangeedit7_Callback(hObject, eventdata, handles)
+% hObject    handle to rangeedit7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of rangeedit7 as text
+%        str2double(get(hObject,'String')) returns contents of rangeedit7 as a double
+
+handles.range7=round(str2num(get(hObject,'string')));
+
+set(handles.rangeedit7,'string',num2str(handles.range7));
+
+guidata(hObject, handles);
+
+% --- Executes during object creation, after setting all properties.
+function rangeedit7_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeedit7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in ansync.
+function ansync_Callback(hObject, eventdata, handles)
+% hObject    handle to ansync (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of ansync
+
+
+% --- Executes on button press in silentbutton.
+function silentbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to silentbutton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of silentbutton

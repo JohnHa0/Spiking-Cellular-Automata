@@ -14,12 +14,13 @@ function [new_weight] = stdp(time, weight)
         for j = 1:n
             if time(i, j) > 0
                 del_weight(i, j) = a_p * weight(i, j) * exp(-time(i, j)/tau_p);
-            else del_weight(i, j) = a_n * weight(i, j) * exp(time(i, j)/tau_n);
+            else
+                del_weight(i, j) = a_n * weight(i, j) * exp(time(i, j)/tau_n);
             end
         end
     end
     
-    new_weight = weight + del_weight
+    new_weight = weight + del_weight;
 end
              
     
