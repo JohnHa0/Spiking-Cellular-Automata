@@ -1,10 +1,11 @@
-function [connection] = range_connection1(range, spikes, inh, sizem)
+function [connection] = range_connection5(range, spikes, inh, sizem)
 
+    m = sizem;
     spikes = spikes .* inh;
-    connection = spikes;
+    connection = zeros(m);
     rangei = range;
     rangej = range;
-    m = sizem;
+    
     
     while rangei > 0
         while rangej > 0
