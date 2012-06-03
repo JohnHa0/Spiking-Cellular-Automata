@@ -161,8 +161,9 @@ while get(hObject, 'Value')
       
       
       %%learning
+      handles.time_new = handles.vis_grid * handles.step;
       if get(handles.learn, 'Value') == 1
-        handles.time_new = handles.vis_grid * handles.step;
+        
 
         %time different within moore neighbourhood
         
@@ -198,9 +199,9 @@ while get(hObject, 'Value')
             
             handles.weight_l = handles.w_new;
         end
-        handles.time_old = handles.time_new; 
+        
       end
-      
+      handles.time_old = handles.time_new; 
       %Using the learnt weight
       if get(handles.learnt, 'Value')
           handles.w_new = handles.weight_l;
