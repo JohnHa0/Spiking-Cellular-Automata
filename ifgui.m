@@ -137,29 +137,16 @@ while get(hObject, 'Value')
 
       set(handles.stepedit, 'String', num2str(handles.step));
       
-    %% Range
-            
-    handles.spike = range_connection1(handles.range1, handles.vis_grid, inh, handles.M) ...
-          + range_connection2(handles.range2, handles.vis_grid, inh, handles.M) ...
-          + range_connection3(handles.range3, handles.vis_grid, inh, handles.M) ...
-    	  + range_connection4(handles.range4, handles.vis_grid, inh, handles.M) ...
-          + range_connection5(handles.range5, handles.vis_grid, inh, handles.M) ...
-          + range_connection6(handles.range6, handles.vis_grid, inh, handles.M) ...
-          + range_connection7(handles.range7, handles.vis_grid, inh, handles.M) ...
-          + range_connection8(handles.range8, handles.vis_grid, inh, handles.M);
+
     
-    %% End range
     %% Refractory  
     if get(handles.silentbutton,'Value')
       if handles.step > 1
           handles.spike = handles.spike .* handles.silent;
       end
     end
-      % how many of eight neighbors are fired.
-      % the fire neuron will generat 80mV current.
-      % the NO. of neurons can be stable when the current value is around 150
-      
-      
+    %% Refractory end
+
       %%learning
       handles.time_new = handles.vis_grid * handles.step;
       if get(handles.learn, 'Value') == 1
@@ -175,41 +162,71 @@ while get(hObject, 'Value')
         if handles.step > 1
             time = handles.time_new - handles.time_old(n,:);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection1(handles.range1, handles.vis_grid, inh, handles.M) .* handles.w_new;
             
             time = handles.time_new - handles.time_old(s,:);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection2(handles.range2, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
             time = handles.time_new - handles.time_old(:,e);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection3(handles.range3, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
             time = handles.time_new - handles.time_old(:,w);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection4(handles.range4, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
             time = handles.time_new - handles.time_old(n,e);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection5(handles.range5, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
             time = handles.time_new - handles.time_old(n,w);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection6(handles.range6, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
             time = handles.time_new - handles.time_old(s,e);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection7(handles.range7, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
             time = handles.time_new - handles.time_old(s,w);
             handles.w_new = stdp(time, handles.w_new);
+            handles.spike = range_connection8(handles.range8, handles.vis_grid, inh, handles.M) .* ...
+                handles.w_new + handles.spike;
             
-            handles.weight_l = handles.w_new;
+            handles.spike_learnt = handles.spike;
         end
-        
+        RI_ext = handles.spike .* 12 + ansync;
+      else
+          %% Range
+            
+          handles.spike = range_connection1(handles.range1, handles.vis_grid, inh, handles.M) ...
+          + range_connection2(handles.range2, handles.vis_grid, inh, handles.M) ...
+          + range_connection3(handles.range3, handles.vis_grid, inh, handles.M) ...
+    	  + range_connection4(handles.range4, handles.vis_grid, inh, handles.M) ...
+          + range_connection5(handles.range5, handles.vis_grid, inh, handles.M) ...
+          + range_connection6(handles.range6, handles.vis_grid, inh, handles.M) ...
+          + range_connection7(handles.range7, handles.vis_grid, inh, handles.M) ...
+          + range_connection8(handles.range8, handles.vis_grid, inh, handles.M);
+       RI_ext = handles.spike .* (12 .* handles.w_new) + ansync;
+    %% End range 
       end
-      handles.time_old = handles.time_new; 
+      
+      handles.time_old = handles.time_new;
+      
       %Using the learnt weight
       if get(handles.learnt, 'Value')
-          handles.w_new = handles.weight_l;
+          handles.spike = handlse.spike_learnt;
+          RI_ext = handles.spike .* 12 + ansync;
       end
       %%learning end
       
-      %RI_ext = handles.spike .* (12 .* handles.Weight) + ansync;
-      RI_ext = handles.spike .* (12 .* handles.w_new) + ansync;
+      
    
       handles.X = handles.X - ((handles.dt/handles.Tau) .* ...
           ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
