@@ -22,7 +22,7 @@ function varargout = ifgui(varargin)
 
 % Edit the above text to modify the response to help ifgui
 
-% Last Modified by GUIDE v2.5 29-May-2012 21:18:23
+% Last Modified by GUIDE v2.5 03-Jun-2012 23:02:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -55,20 +55,19 @@ function ifgui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 %% initialization
-handles.M = 100;                            %size of grid
-handles.vis_grid = zeros(100);              %
+handles.M = get(handles.sizeslider, 'Value');                            %size of grid
+handles.vis_grid = zeros(handles.M);              %
 handles.Speed = 10;                         %speed
 handles.Weight = 14;                        %weight. The rate is 0.02388
-%change weight to matrix
-handles.w_new = handles.Weight * (handles.vis_grid * 0 + 1);
-handles.range1 = 1;                         %connection range1
-handles.range2 = 1;
-handles.range3 = 1;
-handles.range4 = 1;
-handles.range5 = 1;
-handles.range6 = 1;
-handles.range7 = 1;
-handles.range8 = 1;
+
+handles.range1=round(str2num(get(handles.rangeedit1,'string'))); %connection range1
+handles.range2=round(str2num(get(handles.rangeedit2,'string')));
+handles.range3=round(str2num(get(handles.rangeedit3,'string')));
+handles.range4=round(str2num(get(handles.rangeedit4,'string')));
+handles.range5=round(str2num(get(handles.rangeedit5,'string')));
+handles.range6=round(str2num(get(handles.rangeedit6,'string')));
+handles.range7=round(str2num(get(handles.rangeedit7,'string')));
+handles.range8=round(str2num(get(handles.rangeedit8,'string')));
 
 handles.Tau = 10;                           %time constant
 
@@ -108,16 +107,16 @@ function startbutton_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of startbutton
 
 %%
-
 t_step = 0; %used in the selest cells module
-
+handles.w_new = handles.Weight .* ones(handles.M);
 %%Inhitory Synaptic inputs
 
 inh = ones(handles.M);                      
-
-i = 1:5:handles.M;
-j = 1:5:handles.M;
-inh(i, j) = -inh(i, j);
+if get(handles.inhbutton, 'Value')
+    i = 1:5:handles.M;
+    j = 1:5:handles.M;
+    inh(i, j) = -inh(i, j);
+end
 
 %%Inhitory Synaptic end
 
@@ -150,21 +149,18 @@ while get(hObject, 'Value')
           + range_connection8(handles.range8, handles.vis_grid, inh, handles.M);
     
     %% End range
-    %% Silent 
+    %% Refractory  
     if get(handles.silentbutton,'Value')
       if handles.step > 1
           handles.spike = handles.spike .* handles.silent;
       end
     end
-      % how many of eight neighbors are fired.
-      % the fire neuron will generat 80mV current.
-      % the NO. of neurons can be stable when the current value is around 150
       
-      
-      %%learning
+    %%learning
+      handles.time_new = handles.vis_grid * handles.step;
       if get(handles.learn, 'Value') == 1
-        handles.time_new = handles.vis_grid * handles.step;
         
+
         %time different within moore neighbourhood
         
         n = [handles.M 1:handles.M-1];
@@ -197,12 +193,18 @@ while get(hObject, 'Value')
             time = handles.time_new - handles.time_old(s,w);
             handles.w_new = stdp(time, handles.w_new);
             
+            handles.weight_l = handles.w_new;
         end
-        handles.time_old = handles.time_new; 
+        
+      end
+      handles.time_old = handles.time_new; 
+      %Using the learnt weight
+      if get(handles.learnt, 'Value')
+          handles.w_new = handles.weight_l;
       end
       %%learning end
       
-      RI_ext = handles.spike .* (12 * handles.w_new) + ansync;
+      RI_ext = handles.spike .* (12 .* handles.w_new) + ansync;
    
       handles.X = handles.X - ((handles.dt/handles.Tau) .* ...
           ones(handles.M, handles.M)) .* ((handles.X - handles.El) - RI_ext);   % if equation
@@ -260,24 +262,21 @@ while get(hObject, 'Value')
       end
       
       guidata(hObject, handles);
-  
-  if (get(hObject, 'Value') == 0) | (handles.X == -65)
+ 
+  %% Stop propagation
+  if (get(hObject, 'Value') == 0)
       set(hObject, 'String', 'START');
       set(hObject, 'Value', 0);
       axes(handles.axes2);
       hold off;
       axes(handles.axes3);
       hold off;
-      
-        % Plotting results
-
-      
+ 
       guidata(hObject, handles);
       break;
   end
 end
 
-%plot_grid(handles);
 guidata(hObject, handles);
 
 
@@ -288,7 +287,7 @@ function clearutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %%
-
+handles.w_new = handles.Weight .* ones(handles.M);
 handles.vis_grid = zeros(handles.M, handles.M);
 handles.El = -65 .* ones(handles.M, handles.M);
 handles.X = ones(handles.M) .* -65; 
@@ -1363,3 +1362,21 @@ function silentbutton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of silentbutton
+
+
+% --- Executes on button press in inhbutton.
+function inhbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to inhbutton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of inhbutton
+
+
+% --- Executes on button press in learnt.
+function learnt_Callback(hObject, eventdata, handles)
+% hObject    handle to learnt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of learnt

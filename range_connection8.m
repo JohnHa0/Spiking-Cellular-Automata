@@ -1,17 +1,19 @@
-function [connection] = range_connection1(range, spikes, inh, sizem)
+function [connection] = range_connection8(range, spikes, inh, sizem)
 
+    m = sizem;
     spikes = spikes .* inh;
-    connection = spikes;
+    connection = zeros(m);
     rangei = range;
     rangej = range;
-    m = sizem;
+    
     
     while rangei > 0
         while rangej > 0
             
+            indexi = (m-rangei+1):m;
             indexj = 1:rangej;
          
-            e = [(rangej+1):m indexj];
+            e = [(rangei+1):m indexi];
             s = [(rangej+1):m indexj];
             
             connection = spikes(s, e) + connection;
