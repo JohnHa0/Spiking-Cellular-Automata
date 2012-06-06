@@ -8,7 +8,7 @@ function [new_weight] = stdp(time, weight)
     del_weight = zeros(m, n);               %change of weight
     
     a_p = 1;                              %positive learning rate
-    a_n = -0.1;                             %negtive learning rate
+    a_n = -1;                             %negtive learning rate
     
     for i = 1:m
         for j = 1:n

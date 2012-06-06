@@ -55,10 +55,10 @@ function ifgui_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 %% initialization
-handles.M = get(handles.sizeslider, 'Value');                            %size of grid
-handles.vis_grid = zeros(handles.M);              %
+handles.M = get(handles.sizeslider, 'Value');     %size of grid
+handles.vis_grid = zeros(handles.M);              
 handles.Speed = 10;                         %speed
-handles.Weight = 14;                        %weight. The rate is 0.02388
+handles.Weight = 14;                        %weight. One spike can make membrane potential up 2.388%
 
 handles.range1=round(str2num(get(handles.rangeedit1,'string'))); %connection range1
 handles.range2=round(str2num(get(handles.rangeedit2,'string')));
@@ -71,10 +71,10 @@ handles.range8=round(str2num(get(handles.rangeedit8,'string')));
 
 handles.Tau = 10;                           %time constant
 
-handles.theta = -55;                        %firing threshold
+handles.theta = -55;                        %threshold
 handles.dt = 0.1;                           %integration time step
 handles.step = 0;                           %step counter
-handles.El = -65 .* ones(handles.M, handles.M);
+handles.El = -65 .* ones(handles.M, handles.M); %resting potential
 handles.X = ones(handles.M) .* (-65);       %member protential
 
 handles.se = 0;
@@ -82,9 +82,6 @@ handles.se = 0;
 % Update handles structure
 guidata(hObject, handles);
 plot_grid(handles);
-
-% UIWAIT makes ifgui wait for user response (see UIRESUME)
-% uiwait(handles.figure);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -109,8 +106,8 @@ function startbutton_Callback(hObject, eventdata, handles)
 %%
 t_step = 0; %used in the selest cells module
 handles.w_new = handles.Weight .* ones(handles.M);
-%%Inhitory Synaptic inputs
 
+%%Inhitory Synaptic inputs
 inh = ones(handles.M);                      
 if get(handles.inhbutton, 'Value')
     i = 1:5:handles.M;
@@ -148,7 +145,6 @@ while get(hObject, 'Value')
           + range_connection7(handles.range7, handles.vis_grid, inh, handles.M) ...
           + range_connection8(handles.range8, handles.vis_grid, inh, handles.M);
     
-    %% End range
     %% Refractory  
     if get(handles.silentbutton,'Value')
       if handles.step > 1
@@ -160,7 +156,6 @@ while get(hObject, 'Value')
       handles.time_new = handles.vis_grid * handles.step;
       if get(handles.learn, 'Value') == 1
         
-
         %time different within moore neighbourhood
         
         n = [handles.M 1:handles.M-1];
@@ -198,6 +193,7 @@ while get(hObject, 'Value')
         
       end
       handles.time_old = handles.time_new; 
+      
       %Using the learnt weight
       if get(handles.learnt, 'Value')
           handles.w_new = handles.weight_l;
@@ -215,7 +211,7 @@ while get(hObject, 'Value')
       
       plot_grid(handles);
       
-      handles.silent = ~fired;  %silent 
+      handles.silent = ~fired;  %Refractory period 
         
       handles.X = ~fired .* handles.X + fired .* -65; % reset 
       
@@ -236,22 +232,13 @@ while get(hObject, 'Value')
             if handles.se == 1;
             axes(handles.axes2);
 
-            %subplot('position',[0.13 0.13 1-0.26 0.6])
             plot(t_rec1,v_rec1,'.','markersize',12);
             hold on; 
-            %plot([0 100],[-55 -55]);
-
-            %xlabel('Time [ms]'); ylabel('v [mV]')
-
 
             axes(handles.axes3);
 
-            %subplot('position',[0.13 0.13 1-0.26 0.6])
             plot(t_rec2,v_rec2,'.','markersize',12);
             hold on; 
-            %plot([0 100],[-55 -55]);
-
-            %xlabel('Time [ms]'); ylabel('v [mV]')
 
           end
        
@@ -518,7 +505,7 @@ plot_grid(handles);
 guidata(hObject, handles);
 
 
-%%plot grid ////////////////////need to be fixed
+%%plot grid 
 function [] = plot_grid(handles)
  
 handles.X(1, 1) = -55.001;
@@ -577,7 +564,7 @@ switch list{get(hObject,'value')}
     case 'Pulsar'
         handles.pattern=pulsar;
         pattrn=1;
-    case 'Lindner''s Oscillator'  %I don't familiar with this oscillator, so I called it by my name... :) 
+    case 'Lindner''s Oscillator'  
         handles.pattern=lindners;
         pattrn=1;        
     case 'Glider'
@@ -730,9 +717,9 @@ for k=-1:1
     for l=-1:1
         if ~((k==0)&(l==0))
             sum_grid=sum_grid+bounded_grid(2+k:end-1+k,2+l:end-1+l);
-        end %if
-    end % for l
-end %for k
+        end 
+    end 
+end 
 next_grid=zeros(handles.M+4);
 next_grid((sum_grid==2)&(handles.calc_grid==1))=1;
 next_grid(sum_grid==3)=1;
@@ -920,8 +907,8 @@ else
             for k=0:floor(handles.M/p_l)-1
                 for l=0:floor(handles.M/p_l)-1
                     handles.vis_grid(1+k*p_l:(1+k)*p_l,1+l*p_l:(1+l)*p_l)=handles.pattern;
-                end %l
-            end %k
+                end 
+            end 
         case ' high period covered, random direction'
             handles.vis_grid=zeros(handles.M);
             for k=0:floor(handles.M/p_l)-1
@@ -930,29 +917,29 @@ else
                         o1=1:p_l;
                     else
                         o1=p_l:-1:1;
-                    end %if rand
+                    end 
                     if rand>.5
                         o2=1:p_l;
                     else
                         o2=p_l:-1:1;
-                    end %if rand
+                    end 
                     if rand>.5
                         pt=handles.pattern;
                     else
                         pt=handles.pattern';
-                    end %if rand
+                    end 
                     handles.vis_grid(1+k*p_l:(1+k)*p_l,1+l*p_l:(1+l)*p_l)=pt(o1,o2);
-                end %l
-            end %k
+                end 
+            end 
         case ' low period covered, same direction'
             handles.vis_grid=zeros(handles.M);
             for k=0:floor(handles.M/p_l)-1
                 for l=0:floor(handles.M/p_l)-1
                     if ((k/2)==floor(k/2))&&((l/2)==floor(l/2))
                         handles.vis_grid(1+k*p_l:(1+k)*p_l,1+l*p_l:(1+l)*p_l)=handles.pattern;
-                    end %if
-                end %l
-            end %k
+                    end 
+                end 
+            end 
         case ' low period covered, random direction'
             handles.vis_grid=zeros(handles.M);
             handles.pattern(2*handles.M,2*handles.M)=0;
@@ -963,23 +950,23 @@ else
                             o1=1:p_l;
                         else
                             o1=p_l:-1:1;
-                        end %if rand
+                        end 
                         if rand>.5
                             o2=1:p_l;
                         else
                             o2=p_l:-1:1;
-                        end %if rand
+                        end 
                         if rand>.5
                             pt=handles.pattern;
                         else
                             pt=handles.pattern';
-                        end %if rand
+                        end 
                         handles.vis_grid(1+k*p_l:(1+k)*p_l,1+l*p_l:(1+l)*p_l)=pt(o1,o2);
                     end %if ((k/2)==floor(k/2))&((l/2)==floor(l/2))
-                end %l
-            end %k
-    end %switch
-end %if
+                end 
+            end 
+    end 
+end 
 
 % --- Executes on slider movement.
 function speedslider_Callback(hObject, eventdata, handles)
@@ -1067,7 +1054,7 @@ function learn_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of learn
 
 
-%%plot grid ////////////////////need to be fixed
+%%plot grid 
 function []=plot_fired(handles)
 
 M = handles.M;
